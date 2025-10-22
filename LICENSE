@@ -1,0 +1,111 @@
+    document.addEventListener("DOMContentLoaded", () => {
+    const mainImage = document.getElementById("mainProductImage");
+    const thumbnails = document.querySelectorAll(".thumbnail");
+    const colorButtons = document.querySelectorAll(".color-btn");
+    const sizeButtons = document.querySelectorAll(".size-btn");
+    const decreaseBtn = document.getElementById("decrease");
+    const increaseBtn = document.getElementById("increase");
+    const quantityInput = document.getElementById("quantity");
+    const addToCartBtn = document.querySelector(".add-to-cart");
+    const productName = document.querySelector(".product-name");
+    const productPrice = document.querySelector(".product-price");
+
+    // === Ambil produk dari localStorage (dari index.html) ===
+    const selected = JSON.parse(localStorage.getItem("selectedProduct"));
+    if (selected) {
+        productName.textContent = selected.name;
+        productPrice.dataset.price = selected.basePrice;
+        productPrice.textContent = formatCurrency(selected.basePrice);
+        mainImage.src = selected.image;
+    }
+
+    // === Ganti warna ===
+  colorButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      colorButtons.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      mainImage.src = btn.dataset.image;
+    });
+  });
+
+    // === Helper format harga ===
+    function formatCurrency(amount) {
+        return "Rp " + amount.toLocaleString("id-ID");
+    }
+
+    // === Thumbnail klik ===
+    thumbnails.forEach((thumb) => {
+        thumb.addEventListener("click", () => {
+        thumbnails.forEach((t) => t.classList.remove("active"));
+        thumb.classList.add("active");
+        mainImage.src = thumb.src;
+        });
+  });
+
+  // === Warna ===
+  colorButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      colorButtons.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const color = btn.dataset.color;
+      const thumb = document.querySelector(`.thumbnail[data-color="${color}"]`);
+      if (thumb) mainImage.src = thumb.src;
+    });
+  });
+
+  // === Ukuran ===
+  sizeButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      sizeButtons.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+    });
+  });
+
+  // === Quantity control ===
+  decreaseBtn.addEventListener("click", () => {
+    const current = parseInt(quantityInput.value);
+    if (current > 1) quantityInput.value = current - 1;
+  });
+
+  increaseBtn.addEventListener("click", () => {
+    quantityInput.value = parseInt(quantityInput.value) + 1;
+  });
+
+  // === Add to Cart (langsung update UI tanpa reload) ===
+  addToCartBtn.addEventListener("click", () => {
+    const name = productName.textContent;
+    const basePrice = parseFloat(productPrice.dataset.price);
+    const image = mainImage.src;
+    const color = document.querySelector(".color-btn.active").dataset.color;
+    const size = document.querySelector(".size-btn.active")?.textContent || "Default";
+    const qty = parseInt(quantityInput.value);
+
+    const item = { name, basePrice, image, color, size, qty };
+
+            if (window.cartSystem) {
+            window.cartSystem.addToCart(item);  // update cart di sidebar
+            window.cartSystem.openCartSidebar(); // buka sidebar otomatis
+            } else {
+            // fallback kalau user buka langsung tanpa index.js
+            let cart = JSON.parse(localStorage.getItem("cart")) || [];
+            cart.push(item);
+            localStorage.setItem("cart", JSON.stringify(cart));
+            }
+
+    // efek visual tombol
+    addToCartBtn.textContent = "Added!";
+    addToCartBtn.classList.add("added");
+    setTimeout(() => {
+      addToCartBtn.textContent = "Add to Cart";
+      addToCartBtn.classList.remove("added");
+    }, 1200);
+  });
+});
+
+// === Update cart icon count saat halaman produk ===
+window.addEventListener("cartUpdated", () => {
+  const cart = JSON.parse(localStorage.getItem("cart")) || [];
+  const count = cart.reduce((sum, i) => sum + i.qty, 0);
+  document.querySelectorAll(".cart-count").forEach(el => el.textContent = count);
+});
+    
